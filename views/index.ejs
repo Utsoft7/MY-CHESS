@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Multiplayer Chess Game</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --light-square: #f0d9b5;
+        --dark-square: #b58863;
+        --board-border: #7c5b3f;
+        --highlight-square: rgba(255, 255, 0, 0.5);
+      }
+      .chessboard {
+        display: grid;
+        grid-template-columns: repeat(8, minmax(0, 1fr));
+        grid-template-rows: repeat(8, minmax(0, 1fr));
+        width: 500px;
+        height: 500px;
+        border: 12px solid var(--board-border);
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        position: relative;
+        margin: 0 auto;
+      }
+      .board-coordinates {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: bold;
+        user-select: none;
+        font-size: 14px;
+        position: absolute;
+      }
+      .file-coordinate {
+        bottom: -30px;
+        width: 12.5%;
+        text-align: center;
+      }
+      .rank-coordinate {
+        left: -30px;
+        height: 12.5%;
+        display: flex;
+        align-items: center;
+      }
+      .piece.white {
+        color: #fff;
+        filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.8));
+      }
+      .piece.black {
+        color: #000;
+        filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.5));
+      }
+      .flipped {
+        transform: rotate(180deg);
+      }
+      .square {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.2s;
+      }
+      .square.light {
+        background-color: var(--light-square);
+      }
+      .square.dark {
+        background-color: var(--dark-square);
+      }
+      .square.highlight {
+        background-color: var(--highlight-square);
+      }
+      .square:hover {
+        box-shadow: inset 0 0 0 3px rgba(173, 216, 230, 0.7);
+      }
+      .piece {
+        font-size: 44px;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+      .piece.draggable {
+        cursor: grab;
+      }
+      .dragging {
+        opacity: 0.7;
+        transform: scale(1.1);
+      }
+      .flipped .piece {
+        transform: rotate(180deg);
+      }
+      .game-controls {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+      .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+        overflow: hidden;
+      }
+      .btn:hover {
+        transform: translateY(-2px);
+      }
+      .btn:active {
+        transform: translateY(0);
+      }
+      .btn::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 5px;
+        height: 5px;
+        background: rgba(34, 197, 94, 0.5);
+        opacity: 0;
+        border-radius: 100%;
+        transform: scale(1, 1) translate(-50%);
+        transform-origin: 50% 50%;
+      }
+      .btn:hover::after {
+        animation: ripple 1s ease-out;
+      }
+      @keyframes ripple {
+        0% {
+          transform: scale(0, 0);
+          opacity: 0.5;
+        }
+        100% {
+          transform: scale(20, 20);
+          opacity: 0;
+        }
+      }
+      /* Move history styling - changed to dark */
+      .move-history {
+        background: #23272f;
+        color: #eee;
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 20px;
+        max-width: 500px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      }
+      .move-history h3 {
+        margin-bottom: 8px;
+        font-weight: 700;
+      }
+      .move-history ul {
+        list-style: decimal inside;
+        padding-left: 0;
+        margin: 0;
+      }
+      .move-history li {
+        margin-bottom: 2px;
+      }
+      /* Player info - changed to dark */
+      .players {
+        display: flex;
+        justify-content: space-between;
+        max-width: 500px;
+        margin: 0 auto 16px auto;
+        color: #fff;
+        font-weight: 600;
+      }
+      .player {
+        padding: 8px 16px;
+        border-radius: 8px;
+        background: #23272f;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4"
+  >
+    <h1 class="text-3xl font-bold text-white mb-6">Multiplayer Chess Game</h1>
+
+    <!-- Player Info -->
+    <div class="players w-full mb-2">
+      <div class="player" id="player1">Player 1 (White): Waiting...</div>
+      <div class="player" id="player2">Player 2 (Black): Waiting...</div>
+    </div>
+
+    <!-- Chessboard with coordinates -->
+
+    <div class="relative mx-auto">
+      <div class="board-coordinates rank-coordinate" style="top: 0%">8</div>
+      <div class="board-coordinates rank-coordinate" style="top: 12.5%">7</div>
+      <div class="board-coordinates rank-coordinate" style="top: 25%">6</div>
+      <div class="board-coordinates rank-coordinate" style="top: 37.5%">5</div>
+      <div class="board-coordinates rank-coordinate" style="top: 50%">4</div>
+      <div class="board-coordinates rank-coordinate" style="top: 62.5%">3</div>
+      <div class="board-coordinates rank-coordinate" style="top: 75%">2</div>
+      <div class="board-coordinates rank-coordinate" style="top: 87.5%">1</div>
+
+      <div class="board-coordinates file-coordinate" style="left: 0%">a</div>
+      <div class="board-coordinates file-coordinate" style="left: 12.5%">b</div>
+      <div class="board-coordinates file-coordinate" style="left: 25%">c</div>
+      <div class="board-coordinates file-coordinate" style="left: 37.5%">d</div>
+      <div class="board-coordinates file-coordinate" style="left: 50%">e</div>
+      <div class="board-coordinates file-coordinate" style="left: 62.5%">f</div>
+      <div class="board-coordinates file-coordinate" style="left: 75%">g</div>
+      <div class="board-coordinates file-coordinate" style="left: 87.5%">h</div>
+
+      <div class="chessboard" id="chessboard"></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="game-controls">
+      <button
+        class="btn bg-purple-600 text-white hover:bg-purple-700"
+        id="flip-board"
+      >
+        Flip Board
+      </button>
+      <button
+        class="btn bg-green-600 text-white hover:bg-green-700"
+        id="new-game"
+      >
+        New Game
+      </button>
+      <button
+        class="btn bg-orange-600 text-white hover:bg-orange-700"
+        id="undo-move"
+      >
+        Undo Move
+      </button>
+    </div>
+    <!-- Scripts -->
+    <script
+      src="https://cdn.socket.io/4.8.1/socket.io.min.js"
+      integrity="sha384-mkQ3/7FUtcGyoppY6bz/PORYoGqOl7/aSUMn2ymDOJcapfS6PHqxhRTMh1RR0Q6+"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
+      integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script src="/js/chessgame.js"></script>
+    <script>
+      // Flip board button
+      document
+        .getElementById("flip-board")
+        ?.addEventListener("click", function () {
+          const chessboard = document.getElementById("chessboard");
+          chessboard.classList.toggle("flipped");
+        });
+      // Placeholder logic for demo
+      document
+        .getElementById("new-game")
+        ?.addEventListener("click", function () {
+          // Logic for new game would go here
+          console.log("New game requested");
+        });
+      document
+        .getElementById("undo-move")
+        ?.addEventListener("click", function () {
+          // Logic for undoing move would go here
+          console.log("Undo move requested");
+        });
+    </script>
+  </body>
+</html>
