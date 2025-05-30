@@ -19,6 +19,7 @@ let draggedPiece = null;
 let sourceSquare = null;
 let myPlayerRole = null;
 let lastMoveSquares = [];
+let isBoardFlipped = false;
 
 const UNICODE_PIECES = {
   k: "♚",
@@ -42,22 +43,21 @@ const renderBoard = () => {
   boardElement.innerHTML = "";
   const board = chess.board();
 
-  for (let row = 0; row < 8; row++) {
-    for (let col = 0; col < 8; col++) {
-      let boardRow, boardCol;
+  const rowOrder = isBoardFlipped
+    ? [...Array(8).keys()].reverse()
+    : [...Array(8).keys()];
+  const colOrder = isBoardFlipped
+    ? [...Array(8).keys()].reverse()
+    : [...Array(8).keys()];
 
-      if (myPlayerRole === "b") {
-        boardRow = row;
-        boardCol = 7 - col;
-      } else {
-        boardRow = 7 - row;
-        boardCol = col;
-      }
+  for (let i = 0; i < 8; i++) {
+    for (let j = 0; j < 8; j++) {
+      const rowIndex = rowOrder[i];
+      const colIndex = colOrder[j];
+      const piece = board[rowIndex][colIndex];
+      const squareName = `${String.fromCharCode(97 + colIndex)}${8 - rowIndex}`;
 
-      const piece = board[boardRow][boardCol];
-      const squareName = `${String.fromCharCode(97 + boardCol)}${8 - boardRow}`;
-
-      createSquareElement(row, col, piece, squareName);
+      createSquareElement(i, j, piece, squareName);
     }
   }
 
@@ -227,7 +227,7 @@ function updateCoordinates() {
   const rankCoords = coordinatesContainer.querySelectorAll(".rank-coordinate");
   const fileCoords = coordinatesContainer.querySelectorAll(".file-coordinate");
 
-  if (myPlayerRole === "b") {
+  if (isBoardFlipped) {
     rankCoords.forEach((coord, index) => {
       coord.textContent = index + 1;
     });
@@ -242,6 +242,20 @@ function updateCoordinates() {
       coord.textContent = String.fromCharCode(97 + index);
     });
   }
+}
+
+function setBoardOrientation(role) {
+  const shouldBeFlipped = role === "b";
+
+  if (isBoardFlipped !== shouldBeFlipped) {
+    isBoardFlipped = shouldBeFlipped;
+
+    const chessboard = document.getElementById("chessboard");
+    chessboard.classList.toggle("flipped", isBoardFlipped);
+    coordinatesContainer.classList.toggle("flipped", isBoardFlipped);
+  }
+
+  renderBoard();
 }
 
 socket.on("playerRole", (role) => {
