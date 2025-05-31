@@ -245,4 +245,9 @@ io.on("connection", (socket) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`Chess server running on port ${PORT}`);
+
+  // Keep server alive for Render free tier (prevents sleeping)Every 9 minutes
+  setInterval(() => {
+    console.log("Server keep-alive ping");
+  }, 9 * 60 * 1000);
 });
