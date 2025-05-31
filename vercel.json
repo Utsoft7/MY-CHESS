@@ -1,5 +1,4 @@
 {
   "version": 2,
-  "builds": [{ "src": "chess-app/viewsindex.ejs", "use": "@vercel/node" }],
-  "routes": [{ "src": "/(.*)", "dest": "/" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
 }
