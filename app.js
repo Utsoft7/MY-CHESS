@@ -149,7 +149,6 @@ io.on("connection", (socket) => {
     console.log(`User joined as spectator: ${socket.id}`);
   }
 
-  // Send current game state to the newly connected client
   emitGameState();
   emitPlayerStatus();
 
@@ -168,11 +167,11 @@ io.on("connection", (socket) => {
     // Clean up player assignments
     if (socket.id === players.white) {
       delete players.white;
-      console.log("White player disconnected");
+      console.log("White player Got disconnected");
     }
     if (socket.id === players.black) {
       delete players.black;
-      console.log("Black player disconnected");
+      console.log("Black player Got disconnected");
     }
 
     delete playerNames[socket.id];
@@ -202,9 +201,6 @@ io.on("connection", (socket) => {
           san: result.san,
         });
 
-        // Emit updated move history
-        io.emit("updateMoveHistory", result.san);
-
         // Emit complete game state
         emitGameState();
       } else {
@@ -228,22 +224,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("undoMove", () => {
-    // Allow undo only if it's the player's turn or if they're the one who made the last move
     if (!isValidPlayerTurn(socket)) {
       socket.emit("invalidAction", "You can only undo on your turn");
       return;
-    }
-
-    const undoneMove = chess.undo();
-    if (undoneMove) {
-      console.log(`Move undone: ${undoneMove.san} by ${socket.id}`);
-      removeCapturedPiece(undoneMove);
-      emitGameState();
-
-      // Notify about the undo
-      io.emit("moveUndone", undoneMove.san);
-    } else {
-      socket.emit("invalidMove", "No moves to undo.");
     }
   });
 
